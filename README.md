@@ -69,7 +69,7 @@ sudo /opt/iobroker/node_modules/iobroker.wireless-settings/wlan_rights.sh
 
 MIT License
 
-Copyright (c) 2021-2024 @GermanBluefox <dogafox@gmail.com>
+Copyright (c) 2021-2026 @GermanBluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
