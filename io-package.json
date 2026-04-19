@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "wireless-settings",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "news": {
+      "1.2.2": {
+        "en": "Detect docker",
+        "de": "Docker erkennen",
+        "ru": "Обнаружение Docker",
+        "pt": "Detectar docker",
+        "nl": "Docker detecteren",
+        "fr": "Détecter le docker",
+        "it": "Rilevatore docker",
+        "es": "Detectar el docker",
+        "pl": "Wykrywanie dokerów",
+        "uk": "Детекти докер",
+        "zh-cn": "检测器"
+      },
       "1.2.1": {
         "en": "Added editable Ethernet and IPv4 settings in the Admin UI\nAdded DHCP/static IPv4 switching with subnet, gateway and DNS handling\nImproved command execution by using argument-based process calls instead of raw shell strings\nMigrated GUI to vite",
         "de": "Bearbeitete Ethernet- und IPv4-Einstellungen im Admin UI hinzugefügt\nDHCP/statische IPv4-Schaltung mit Subnetz, Gateway und DNS-Handling hinzugefügt\nVerbesserte Befehlsausführung durch Verwendung von streitbasierten Prozessanrufen anstelle von Rohschalensaiten\nMigrated GUI to vite",

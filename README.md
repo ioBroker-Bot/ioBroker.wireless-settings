@@ -51,7 +51,7 @@ sudo /opt/iobroker/node_modules/iobroker.wireless-settings/wlan_rights.sh
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 1.2.2 (2026-04-19)
 
 - Detect docker
 
