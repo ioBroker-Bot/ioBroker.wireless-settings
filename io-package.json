@@ -54,7 +54,6 @@
       "pi"
     ],
     "platform": "Javascript/Node.js",
-    "main": "dist/main.js",
     "icon": "wireless-settings.png",
     "enabled": true,
     "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.wireless-settings/master/admin/wireless-settings.png",
