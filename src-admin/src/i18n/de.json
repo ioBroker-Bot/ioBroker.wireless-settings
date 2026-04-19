@@ -31,5 +31,21 @@
   "not connected": "nicht verbunden",
   "Apply": "Anwenden",
   "WI-FI password": "WLAN-Passwort",
-  "Instance is not running": "Instanz läuft nicht"
+  "Instance is not running": "Instanz läuft nicht",
+  "Current network values": "Aktuelle Netzwerkwerte",
+  "IPv4 configuration": "IPv4-Konfiguration",
+  "Connection profile": "Verbindungsprofil",
+  "Use DHCP": "DHCP verwenden",
+  "Static IPv4 address": "Statische IPv4-Adresse",
+  "Subnet mask or prefix": "Subnetzmaske oder Präfix",
+  "Examples: 255.255.255.0 or 24": "Beispiele: 255.255.255.0 oder 24",
+  "DNS servers": "DNS-Server",
+  "One entry per line or separated by commas": "Ein Eintrag pro Zeile oder durch Kommas getrennt",
+  "Apply network settings": "Netzwerkeinstellungen anwenden",
+  "Reset changes": "Änderungen zurücksetzen",
+  "Applying network changes may interrupt the current connection. If the IP address changes, reopen the admin page using the new address.": "Das Anwenden der Netzwerkeinstellungen kann die aktuelle Verbindung unterbrechen. Wenn sich die IP-Adresse ändert, öffne die Admin-Seite mit der neuen Adresse erneut.",
+  "Network settings saved. The connection will be reapplied shortly.": "Netzwerkeinstellungen gespeichert. Die Verbindung wird in Kürze neu angewendet.",
+  "Unable to save network settings": "Netzwerkeinstellungen konnten nicht gespeichert werden",
+  "This interface cannot be edited with NetworkManager": "Diese Schnittstelle kann nicht über NetworkManager bearbeitet werden",
+  "Connect to a WI-FI network first to edit its IP settings": "Verbinde dich zuerst mit einem WLAN, um dessen IP-Einstellungen zu bearbeiten"
 }

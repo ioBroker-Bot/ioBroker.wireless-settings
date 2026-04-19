@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "wireless-settings",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "news": {
       "1.0.2": {
         "en": "Updated for raspberry 5\nChange name to \"wireless-settings\"",
@@ -15,11 +15,24 @@
         "pl": "Aktualizacja dla malin 5\nZmień nazwę na \"wireless- settings\"",
         "uk": "Ажурирано для малини 5\nЗмінити назву на \"безкоштовні налаштування\"",
         "zh-cn": "草莓5更新\n将名称改为“ 无线设置 ”"
+      },
+      "1.1.0": {
+        "en": "Added editable Ethernet and IPv4 network settings (DHCP/static IP, subnet, gateway, DNS)",
+        "de": "Bearbeitbare Ethernet- und IPv4-Netzwerkeinstellungen hinzugefügt (DHCP/statische IP, Subnetz, Gateway, DNS)",
+        "ru": "Добавлены редактируемые настройки Ethernet и IPv4 (DHCP/статический IP, подсеть, шлюз, DNS)",
+        "pt": "Adicionadas configurações editáveis de Ethernet e IPv4 (DHCP/IP estático, sub-rede, gateway, DNS)",
+        "nl": "Bewerkbare Ethernet- en IPv4-instellingen toegevoegd (DHCP/statisch IP, subnet, gateway, DNS)",
+        "fr": "Ajout des paramètres Ethernet et IPv4 modifiables (DHCP/IP statique, sous-réseau, passerelle, DNS)",
+        "it": "Aggiunte impostazioni Ethernet e IPv4 modificabili (DHCP/IP statico, subnet, gateway, DNS)",
+        "es": "Se añadieron ajustes editables de Ethernet e IPv4 (DHCP/IP estática, subred, puerta de enlace, DNS)",
+        "pl": "Dodano edytowalne ustawienia Ethernet i IPv4 (DHCP/statyczny IP, podsieć, brama, DNS)",
+        "uk": "Додано редаговані налаштування Ethernet та IPv4 (DHCP/статична IP, підмережа, шлюз, DNS)",
+        "zh-cn": "新增可编辑的以太网和 IPv4 网络设置（DHCP/静态 IP、子网、网关、DNS）"
       }
     },
     "titleLang": {
-      "en": "Wireless settings",
-      "de": "WLAN-Einstellungen",
+      "en": "Network settings",
+      "de": "Netzwerk-Einstellungen",
       "ru": "Настройки беспроводной связи",
       "pt": "Configurações sem fio",
       "nl": "Draadloze instellingen",
@@ -31,8 +44,8 @@
       "zh-cn": "无线设置"
     },
     "desc": {
-      "en": "Wireless settings for Raspberry Pi",
-      "de": "WLAN-Einstellungen für Raspberry Pi",
+      "en": "Network settings for Raspberry Pi and Linux devices managed by NetworkManager",
+      "de": "Netzwerkeinstellungen für Raspberry Pi und Linux-Geräte mit NetworkManager",
       "ru": "Настройки беспроводной связи для Raspberry Pi",
       "pt": "Configurações sem fio para Raspberry Pi",
       "nl": "Draadloze instellingen voor Raspberry Pi",
@@ -49,7 +62,9 @@
     "keywords": [
       "network",
       "wireless",
-      "wlan",
+      "ethernet",
+      "dhcp",
+      "static ip",
       "raspberry",
       "pi"
     ],

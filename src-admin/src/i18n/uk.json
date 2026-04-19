@@ -31,5 +31,21 @@
   "seconds": "секунд",
   "Apply": "Застосувати",
   "WI-FI password": "Пароль WI-FI",
-  "Instance is not running": "Екземпляр не запущено"
+  "Instance is not running": "Екземпляр не запущено",
+  "Current network values": "Current network values",
+  "IPv4 configuration": "IPv4 configuration",
+  "Connection profile": "Connection profile",
+  "Use DHCP": "Use DHCP",
+  "Static IPv4 address": "Static IPv4 address",
+  "Subnet mask or prefix": "Subnet mask or prefix",
+  "Examples: 255.255.255.0 or 24": "Examples: 255.255.255.0 or 24",
+  "DNS servers": "DNS servers",
+  "One entry per line or separated by commas": "One entry per line or separated by commas",
+  "Apply network settings": "Apply network settings",
+  "Reset changes": "Reset changes",
+  "Applying network changes may interrupt the current connection. If the IP address changes, reopen the admin page using the new address.": "Applying network changes may interrupt the current connection. If the IP address changes, reopen the admin page using the new address.",
+  "Network settings saved. The connection will be reapplied shortly.": "Network settings saved. The connection will be reapplied shortly.",
+  "Unable to save network settings": "Unable to save network settings",
+  "This interface cannot be edited with NetworkManager": "This interface cannot be edited with NetworkManager",
+  "Connect to a WI-FI network first to edit its IP settings": "Connect to a WI-FI network first to edit its IP settings"
 }

@@ -1,7 +1,7 @@
 {
   "name": "iobroker.wireless-settings",
-  "version": "1.0.2",
-  "description": "This adapter is used to anonymously collect the data on the central server for scientific research",
+  "version": "1.1.0",
+  "description": "Network settings adapter for Raspberry Pi and Linux devices managed by NetworkManager",
   "author": {
     "name": "bluefox",
     "email": "dogafox@gmail.com"
@@ -11,7 +11,10 @@
   "keywords": [
     "ioBroker",
     "network",
-    "data mining"
+    "wireless",
+    "ethernet",
+    "dhcp",
+    "static-ip"
   ],
   "repository": {
     "type": "git",
@@ -65,7 +68,7 @@
     "test": "npm run test:js && npm run test:package",
     "prepublishOnly": "npm run build",
     "lint": "cd src && eslint -c eslint.config.mjs",
-    "build": "tsc -p src/tsconfig.json && node tasks",
+    "build": "tsc -p src/tsconfig.json",
     "tsc": "tsc -p src/tsconfig.json",
     "release": "release-script patch --yes --no-update-lockfile",
     "release-patch": "release-script patch --yes --no-update-lockfile",

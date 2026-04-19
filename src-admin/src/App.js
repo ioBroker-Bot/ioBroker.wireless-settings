@@ -3,6 +3,7 @@ import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
 import { enqueueSnackbar, SnackbarProvider } from 'notistack';
 
 import {
+    Alert,
     AppBar,
     Tabs,
     Tab,
@@ -123,11 +124,10 @@ class App extends GenericApp {
         super(props, extendedProps);
 
         Object.assign(this.state, {
-            tabValue: window.localStorage.getItem(`wireless.${this.instance}.tab`) || '',
+            tabValue: window.localStorage.getItem(`network.${this.instance}.tab`) || '',
             interfaces: null,
             interfacesChanged: [],
             wifi: [],
-            dns: [],
             wifiConnection: '',
             wifiDialog: false,
             wifiDialogPassword: '',
@@ -140,12 +140,40 @@ class App extends GenericApp {
         });
 
         this.scanWifiTimer = null;
+        this.refreshTimer = null;
+    }
+
+    static normalizeDnsList(dns) {
+        if (!dns) {
+            return [];
+        }
+        if (Array.isArray(dns)) {
+            return dns.map(item => `${item}`.trim()).filter(Boolean);
+        }
+        return dns
+            .split(/[\n,;]+/)
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+
+    static normalizeInterfaceConfig(interfaceItem) {
+        return {
+            dhcp: !!interfaceItem?.dhcp,
+            configIp4: (interfaceItem?.configIp4 || '').trim(),
+            configIp4subnet: (interfaceItem?.configIp4subnet || '').trim(),
+            configGateway: (interfaceItem?.configGateway || '').trim(),
+            configDns: App.normalizeDnsList(interfaceItem?.configDns),
+        };
     }
 
     componentWillUnmount() {
         if (this.scanWifiTimer) {
             clearTimeout(this.scanWifiTimer);
             this.scanWifiTimer = null;
+        }
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+            this.refreshTimer = null;
         }
         this.socket.unsubscribeState(`system.adapter.wireless-settings.${this.instance}.alive`, this.onAliveChanged);
     }
@@ -168,6 +196,66 @@ class App extends GenericApp {
                 await this.refresh();
             }
         }
+    };
+
+    getEditedInterface() {
+        return this.state.interfacesChanged.find(i => i.iface === this.state.tabValue);
+    }
+
+    updateEditedInterface = update => {
+        this.setState(prevState => {
+            const interfacesChanged = JSON.parse(JSON.stringify(prevState.interfacesChanged));
+            const index = interfacesChanged.findIndex(item => item.iface === prevState.tabValue);
+            if (index === -1) {
+                return null;
+            }
+            interfacesChanged[index] = {
+                ...interfacesChanged[index],
+                ...update,
+            };
+            return { interfacesChanged };
+        });
+    };
+
+    resetInterfaceChanges = iface => {
+        this.setState(prevState => {
+            const interfaces = prevState.interfaces || [];
+            const source = interfaces.find(item => item.iface === iface);
+            if (!source) {
+                return null;
+            }
+            const interfacesChanged = JSON.parse(JSON.stringify(prevState.interfacesChanged));
+            const index = interfacesChanged.findIndex(item => item.iface === iface);
+            if (index === -1) {
+                return null;
+            }
+            interfacesChanged[index] = JSON.parse(JSON.stringify(source));
+            return { interfacesChanged };
+        });
+    };
+
+    isInterfaceDirty = iface => {
+        const original = this.state.interfaces?.find(item => item.iface === iface);
+        const changed = this.state.interfacesChanged?.find(item => item.iface === iface);
+        if (!original || !changed) {
+            return false;
+        }
+        return (
+            JSON.stringify(App.normalizeInterfaceConfig(original)) !== JSON.stringify(App.normalizeInterfaceConfig(changed))
+        );
+    };
+
+    canSaveInterface = interfaceItem => {
+        if (!interfaceItem?.editable || this.state.processing || !this.state.alive) {
+            return false;
+        }
+        if (interfaceItem.type === 'wifi' && !interfaceItem.connection) {
+            return false;
+        }
+        if (interfaceItem.dhcp) {
+            return true;
+        }
+        return !!interfaceItem.configIp4?.trim() && !!interfaceItem.configIp4subnet?.trim();
     };
 
     async refreshCurrentSSID() {
@@ -284,8 +372,7 @@ class App extends GenericApp {
             },
             async () => {
                 await this.refreshWiFi();
-                const dns = await this.socket.sendTo(`wireless-settings.${this.instance}`, 'dns', null);
-                this.setState({ dns, firstRequest: 2 });
+                this.setState({ firstRequest: 2 });
             },
         );
     }
@@ -332,6 +419,81 @@ class App extends GenericApp {
                 }),
         );
     }
+
+    saveInterfaceConfig = interfaceItem => {
+        if (!this.state.alive || !interfaceItem) {
+            return;
+        }
+
+        const payload = {
+            iface: interfaceItem.iface,
+            type: interfaceItem.type,
+            dhcp: !!interfaceItem.dhcp,
+            ip4: interfaceItem.configIp4 || '',
+            ip4subnet: interfaceItem.configIp4subnet || '',
+            gateway: interfaceItem.configGateway || '',
+            dns: App.normalizeDnsList(interfaceItem.configDns),
+        };
+
+        this.setState({ processing: true }, () =>
+            this.socket
+                .sendTo(`wireless-settings.${this.instance}`, 'setInterfaceConfig', payload)
+                .then(result => {
+                    const success = result?.success === true;
+                    const message = I18n.t(result?.message || 'Unable to save network settings');
+
+                    if (success) {
+                        enqueueSnackbar(message, { variant: 'success' });
+                        this.setState(prevState => {
+                            const normalizeDns = item => App.normalizeDnsList(item);
+                            const interfaces = JSON.parse(JSON.stringify(prevState.interfaces || [])).map(item =>
+                                item.iface !== interfaceItem.iface
+                                    ? item
+                                    : {
+                                          ...item,
+                                          dhcp: payload.dhcp,
+                                          connection: result?.connection || item.connection,
+                                          configIp4: payload.ip4,
+                                          configIp4subnet: payload.ip4subnet,
+                                          configGateway: payload.gateway,
+                                          configDns: normalizeDns(payload.dns),
+                                      },
+                            );
+                            const interfacesChanged = JSON.parse(JSON.stringify(prevState.interfacesChanged || [])).map(
+                                item =>
+                                    item.iface !== interfaceItem.iface
+                                        ? item
+                                        : {
+                                              ...item,
+                                              dhcp: payload.dhcp,
+                                              connection: result?.connection || item.connection,
+                                              configIp4: payload.ip4,
+                                              configIp4subnet: payload.ip4subnet,
+                                              configGateway: payload.gateway,
+                                              configDns: normalizeDns(payload.dns),
+                                          },
+                            );
+                            return { interfaces, interfacesChanged, processing: false };
+                        });
+
+                        if (this.refreshTimer) {
+                            clearTimeout(this.refreshTimer);
+                        }
+                        this.refreshTimer = setTimeout(() => {
+                            this.refreshTimer = null;
+                            this.refresh().catch(() => undefined);
+                        }, 3000);
+                    } else {
+                        enqueueSnackbar(message, { variant: 'error' });
+                        this.setState({ processing: false });
+                    }
+                })
+                .catch(error => {
+                    enqueueSnackbar(`${I18n.t('Unable to save network settings')}: ${error}`, { variant: 'error' });
+                    this.setState({ processing: false });
+                }),
+        );
+    };
 
     wifiPasswordApply(apply) {
         const ssid = this.state.wifiDialog;
@@ -423,72 +585,207 @@ class App extends GenericApp {
         }
     }
 
-    renderInterface(interfaceItem) {
+    renderCurrentNetwork(interfaceItem) {
+        return (
+            <div style={{ minWidth: 260, maxWidth: 380 }}>
+                {(interfaceItem.ip4 || interfaceItem.ip6 || interfaceItem.dns?.length || interfaceItem.gateway) && (
+                    <h4 style={{ marginTop: 8 }}>{I18n.t('Current network values')}</h4>
+                )}
+                {interfaceItem.ip4 ? (
+                    <TextField
+                        variant="standard"
+                        style={styles.input}
+                        value={interfaceItem.ip4}
+                        label="IPv4"
+                        disabled
+                        fullWidth
+                    />
+                ) : null}
+                {interfaceItem.ip4 ? (
+                    <TextField
+                        variant="standard"
+                        style={styles.input}
+                        value={interfaceItem.ip4subnet}
+                        label="IPv4 netmask"
+                        disabled
+                        fullWidth
+                    />
+                ) : null}
+                {interfaceItem.gateway ? (
+                    <TextField
+                        variant="standard"
+                        style={styles.input}
+                        value={interfaceItem.gateway}
+                        label={I18n.t('Default gateway')}
+                        disabled
+                        fullWidth
+                    />
+                ) : null}
+                {interfaceItem.ip6 ? <h4>IPv6</h4> : null}
+                {interfaceItem.ip6 ? (
+                    <TextField
+                        variant="standard"
+                        style={styles.input}
+                        value={interfaceItem.ip6}
+                        label="IPv6"
+                        disabled
+                        fullWidth
+                    />
+                ) : null}
+                {interfaceItem.ip6 ? (
+                    <TextField
+                        variant="standard"
+                        value={interfaceItem.ip6subnet}
+                        label="IPv6 netmask"
+                        disabled
+                        fullWidth
+                    />
+                ) : null}
+                {interfaceItem.dns?.length ? <h4>DNS</h4> : null}
+                {interfaceItem.dns?.map((dnsRecord, dnsI) => (
+                    <div key={dnsI}>
+                        <TextField
+                            variant="standard"
+                            value={dnsRecord}
+                            label={I18n.t('DNS record')}
+                            disabled
+                            fullWidth
+                        />
+                    </div>
+                )) || null}
+            </div>
+        );
+    }
+
+    renderIpv4Editor(interfaceItem) {
+        if (!interfaceItem || (interfaceItem.type !== 'ethernet' && interfaceItem.type !== 'wifi')) {
+            return null;
+        }
+
+        const dirty = this.isInterfaceDirty(interfaceItem.iface);
+        const dnsText = App.normalizeDnsList(interfaceItem.configDns).join('\n');
+
+        return (
+            <div style={{ minWidth: 300, maxWidth: 420 }}>
+                <h4 style={{ marginTop: 8 }}>{I18n.t('IPv4 configuration')}</h4>
+                {interfaceItem.connection ? (
+                    <TextField
+                        variant="standard"
+                        style={styles.input}
+                        value={interfaceItem.connection}
+                        label={I18n.t('Connection profile')}
+                        disabled
+                        fullWidth
+                    />
+                ) : null}
+                {!interfaceItem.editable ? (
+                    <Alert severity="info" style={{ marginBottom: 12 }}>
+                        {I18n.t('This interface cannot be edited with NetworkManager')}
+                    </Alert>
+                ) : null}
+                {interfaceItem.type === 'wifi' && !interfaceItem.connection ? (
+                    <Alert severity="info" style={{ marginBottom: 12 }}>
+                        {I18n.t('Connect to a WI-FI network first to edit its IP settings')}
+                    </Alert>
+                ) : null}
+                <FormControlLabel
+                    style={{ marginLeft: 0, marginBottom: 8 }}
+                    control={
+                        <Switch
+                            disabled={this.state.processing || !interfaceItem.editable}
+                            checked={!!interfaceItem.dhcp}
+                            onChange={e =>
+                                this.updateEditedInterface({
+                                    dhcp: e.target.checked,
+                                    ...(e.target.checked
+                                        ? {
+                                              configIp4: '',
+                                              configIp4subnet: '',
+                                              configGateway: '',
+                                          }
+                                        : {}),
+                                })
+                            }
+                        />
+                    }
+                    label={I18n.t('Use DHCP')}
+                />
+                <TextField
+                    variant="standard"
+                    style={styles.input}
+                    value={interfaceItem.configIp4 || ''}
+                    label={I18n.t('Static IPv4 address')}
+                    disabled={this.state.processing || !!interfaceItem.dhcp || !interfaceItem.editable}
+                    fullWidth
+                    onChange={e => this.updateEditedInterface({ configIp4: e.target.value })}
+                />
+                <TextField
+                    variant="standard"
+                    style={styles.input}
+                    value={interfaceItem.configIp4subnet || ''}
+                    label={I18n.t('Subnet mask or prefix')}
+                    disabled={this.state.processing || !!interfaceItem.dhcp || !interfaceItem.editable}
+                    helperText={I18n.t('Examples: 255.255.255.0 or 24')}
+                    fullWidth
+                    onChange={e => this.updateEditedInterface({ configIp4subnet: e.target.value })}
+                />
+                <TextField
+                    variant="standard"
+                    style={styles.input}
+                    value={interfaceItem.configGateway || ''}
+                    label={I18n.t('Default gateway')}
+                    disabled={this.state.processing || !!interfaceItem.dhcp || !interfaceItem.editable}
+                    fullWidth
+                    onChange={e => this.updateEditedInterface({ configGateway: e.target.value })}
+                />
+                <TextField
+                    variant="standard"
+                    style={styles.input}
+                    value={dnsText}
+                    label={I18n.t('DNS servers')}
+                    helperText={I18n.t('One entry per line or separated by commas')}
+                    disabled={this.state.processing || !interfaceItem.editable}
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    onChange={e => this.updateEditedInterface({ configDns: App.normalizeDnsList(e.target.value) })}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={!dirty || !this.canSaveInterface(interfaceItem)}
+                        onClick={() => this.saveInterfaceConfig(interfaceItem)}
+                    >
+                        {I18n.t('Apply network settings')}
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="grey"
+                        disabled={!dirty || this.state.processing}
+                        onClick={() => this.resetInterfaceChanges(interfaceItem.iface)}
+                    >
+                        {I18n.t('Reset changes')}
+                    </Button>
+                </div>
+                <Alert severity="warning" style={{ marginTop: 16 }}>
+                    {I18n.t(
+                        'Applying network changes may interrupt the current connection. If the IP address changes, reopen the admin page using the new address.',
+                    )}
+                </Alert>
+            </div>
+        );
+    }
+
+    renderInterface(interfaceItem, editedInterface) {
         if (!interfaceItem) {
             return null;
         }
 
         return (
-            <div style={{ display: 'flex', gap: 32 }}>
-                <div style={{ minWidth: 195 }}>
-                    {interfaceItem.ip4 ? <h4 style={{ marginTop: 8 }}>IPv4</h4> : null}
-                    {interfaceItem.ip4 ? (
-                        <TextField
-                            variant="standard"
-                            style={styles.input}
-                            value={interfaceItem.ip4}
-                            label="IPv4"
-                            disabled
-                        />
-                    ) : null}
-                    {interfaceItem.ip4 ? (
-                        <TextField
-                            variant="standard"
-                            style={styles.input}
-                            value={interfaceItem.ip4subnet}
-                            label="IPv4 netmask"
-                            disabled
-                        />
-                    ) : null}
-                    {interfaceItem.gateway ? (
-                        <TextField
-                            variant="standard"
-                            style={styles.input}
-                            value={interfaceItem.gateway}
-                            label={I18n.t('Default gateway')}
-                            disabled
-                        />
-                    ) : null}
-                    {interfaceItem.ip6 ? <h4>IPv6</h4> : null}
-                    {interfaceItem.ip6 ? (
-                        <TextField
-                            variant="standard"
-                            style={styles.input}
-                            value={interfaceItem.ip6}
-                            label="IPv6"
-                            disabled
-                        />
-                    ) : null}
-                    {interfaceItem.ip6 ? (
-                        <TextField
-                            variant="standard"
-                            value={interfaceItem.ip6subnet}
-                            label="IPv6 netmask"
-                            disabled
-                        />
-                    ) : null}
-                    {interfaceItem.dns?.length ? <h4>DNS</h4> : null}
-                    {interfaceItem.dns?.map((dnsRecord, dnsI) => (
-                        <div key={dnsI}>
-                            <TextField
-                                variant="standard"
-                                value={dnsRecord}
-                                label={I18n.t('DNS record')}
-                                disabled
-                            />
-                        </div>
-                    )) || null}
-                </div>
+            <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+                {this.renderCurrentNetwork(interfaceItem)}
+                {this.renderIpv4Editor(editedInterface || interfaceItem)}
                 {this.renderWireless(interfaceItem)}
             </div>
         );
@@ -500,7 +797,7 @@ class App extends GenericApp {
         }
 
         return (
-            <div>
+            <div style={{ minWidth: 260 }}>
                 {this.state.processing || this.state.firstRequest < 2 ? (
                     <LinearProgress />
                 ) : (
@@ -599,6 +896,7 @@ class App extends GenericApp {
         }
 
         const interIndex = this.state.interfaces.findIndex(i => i.iface === this.state.tabValue);
+        const editedIndex = this.state.interfacesChanged.findIndex(i => i.iface === this.state.tabValue);
 
         return (
             <StyledEngineProvider injectFirst>
@@ -656,7 +954,11 @@ class App extends GenericApp {
 
                         <div style={styles.tabContent}>
                             {!this.state.interfaces?.length && !this.state.alive ? I18n.t('Instance is not running') : null}
-                            {interIndex !== -1 && this.renderInterface(this.state.interfaces[interIndex], interIndex)}
+                            {interIndex !== -1 &&
+                                this.renderInterface(
+                                    this.state.interfaces[interIndex],
+                                    editedIndex !== -1 ? this.state.interfacesChanged[editedIndex] : undefined,
+                                )}
                         </div>
                         {this.renderWifiDialog()}
                     </div>
