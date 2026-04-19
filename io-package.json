@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "wireless-settings",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "news": {
+      "1.2.1": {
+        "en": "Added editable Ethernet and IPv4 settings in the Admin UI\nAdded DHCP/static IPv4 switching with subnet, gateway and DNS handling\nImproved command execution by using argument-based process calls instead of raw shell strings\nMigrated GUI to vite",
+        "de": "Bearbeitete Ethernet- und IPv4-Einstellungen im Admin UI hinzugefügt\nDHCP/statische IPv4-Schaltung mit Subnetz, Gateway und DNS-Handling hinzugefügt\nVerbesserte Befehlsausführung durch Verwendung von streitbasierten Prozessanrufen anstelle von Rohschalensaiten\nMigrated GUI to vite",
+        "ru": "Добавлены редактируемые настройки Ethernet и IPv4 в интерфейсе Admin\nДобавлено DHCP/статическое переключение IPv4 с подсетью, шлюзом и обработкой DNS\nУлучшенное выполнение команд с использованием основанных на аргументах вызовов процессов вместо сырых строк оболочки\nИммигрировавший ГУИ поздравит",
+        "pt": "Adicionado Ethernet e configurações IPv4 editáveis na interface de administração\nAdicionado comutação DHCP/estática IPv4 com sub-rede, gateway e manuseio de DNS\nExecução de comando melhorada usando chamadas de processo baseadas em argumentos em vez de cadeias de shell brutas\nGUI Migrada para Vite",
+        "nl": "Bewerkbare ethernet- en IPv4-instellingen toegevoegd in de Admin UI\nToegevoegd DHCP/statische IPv4 switch met subnet, gateway en DNS handling\nVerbeterde commando-uitvoering door argument-gebaseerde procesaanroepen te gebruiken in plaats van ruwe shell-tekenreeksen\nGUI migreren naar Vite",
+        "fr": "Ajout des paramètres Ethernet et IPv4 modifiables dans l'interface utilisateur Admin\nAjout de la commutation DHCP/static IPv4 avec sous-réseau, passerelle et gestion DNS\nAmélioration de l'exécution des commandes en utilisant des appels de processus basés sur des arguments au lieu de chaînes shell brutes\nL'interface graphique a migré pour voir",
+        "it": "Aggiunte le impostazioni modificabili di Ethernet e IPv4 nell'Admin UI\nInterruttore DHCP/static IPv4 con subnet, gateway e gestione DNS\nEsecuzione dei comandi migliorata utilizzando chiamate di processo basate su argomenti invece di stringhe di shell crude\nGUI emigrata a vite",
+        "es": "Configuración de Ethernet editable y IPv4 en la interfaz de administración\nConmutación DHCP/static IPv4 con subnet, gateway y DNS\nMejora de la ejecución de comandos mediante llamadas basadas en argumentos en lugar de cadenas de shell crudas\nMigrated GUI to vite",
+        "pl": "Dodano edytowalne ustawienia Ethernet i IPv4 w UI Admin\nDodano DHCP / statyczne przełączanie IPv4 z podsiecią, bramą i DNS\nUlepszone wykonywanie poleceń za pomocą procesów opartych na argumentach zamiast surowych łańcuchów powłoki\nMigrated GUI to vite",
+        "uk": "Додано налаштування Ethernet та IPv4 в налаштуваннях Admin UI\nДодано DHCP / статичний IPv4 перемикач з підмережею, шлюзом та DNS обробка\nУдосконалено виконання команд за допомогою викликів на основі аргументів замість рядків сирої оболонки\nМігратний графічний інтерфейс для vite",
+        "zh-cn": "在管理 UI 中添加可编辑的 Ethernet 和 IPv4 设置\n添加 DHCP/ static IPv4 用子网、网关和 DNS 处理切换\n通过使用基于参数的进程调用而不是使用原始 shell 字符串来改进命令执行\n将图形用户界面切换为 vite"
+      },
       "1.0.2": {
         "en": "Updated for raspberry 5\nChange name to \"wireless-settings\"",
         "de": "Aktualisiert für Himbeere 5\nName auf \"wireless-settings\" ändern",

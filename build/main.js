@@ -451,10 +451,7 @@ class NetworkSettings extends adapter_core_1.Adapter {
                     item.slaveOf = profile.slaveOf;
                 }
             }
-            const typeIsEditable = item.type === 'ethernet' ||
-                item.type === 'wifi' ||
-                item.type === 'bridge' ||
-                item.type === 'bond';
+            const typeIsEditable = item.type === 'ethernet' || item.type === 'wifi' || item.type === 'bridge' || item.type === 'bond';
             item.editable = typeIsEditable && !item.slaveOf && item.status !== 'unmanaged';
         }
         return result;
@@ -599,10 +596,7 @@ class NetworkSettings extends adapter_core_1.Adapter {
         if (!input?.iface) {
             return { success: false, message: 'Interface is required' };
         }
-        if (input.type !== 'ethernet' &&
-            input.type !== 'wifi' &&
-            input.type !== 'bridge' &&
-            input.type !== 'bond') {
+        if (input.type !== 'ethernet' && input.type !== 'wifi' && input.type !== 'bridge' && input.type !== 'bond') {
             return { success: false, message: 'This interface type is not supported' };
         }
         try {
