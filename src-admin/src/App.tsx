@@ -482,7 +482,7 @@ export default class App extends GenericApp<AppProps, AppState> {
                     } else {
                         enqueueSnackbar(`${ssid} ${result}`, { variant: 'error' });
                     }
-                    this.refresh().then(() => this.setState({ processing: false }));
+                    void this.refresh().then(() => this.setState({ processing: false }));
                 }),
         );
     }
@@ -503,7 +503,7 @@ export default class App extends GenericApp<AppProps, AppState> {
                     } else {
                         enqueueSnackbar(result, { variant: 'error' });
                     }
-                    this.refresh().then(() => this.setState({ processing: false }));
+                    void this.refresh().then(() => this.setState({ processing: false }));
                 }),
         );
     }
@@ -671,7 +671,7 @@ export default class App extends GenericApp<AppProps, AppState> {
         }
     }
 
-    renderCurrentNetwork(interfaceItem: NetworkInterface): React.ReactElement {
+    static renderCurrentNetwork(interfaceItem: NetworkInterface): React.ReactElement {
         return (
             <div style={{ minWidth: 260, maxWidth: 380 }}>
                 {(interfaceItem.ip4 || interfaceItem.ip6 || interfaceItem.dns?.length || interfaceItem.gateway) && (
@@ -912,7 +912,7 @@ export default class App extends GenericApp<AppProps, AppState> {
 
         return (
             <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-                {this.renderCurrentNetwork(interfaceItem)}
+                {App.renderCurrentNetwork(interfaceItem)}
                 {this.renderIpv4Editor(editedInterface || interfaceItem)}
                 {this.renderWireless(interfaceItem)}
             </div>

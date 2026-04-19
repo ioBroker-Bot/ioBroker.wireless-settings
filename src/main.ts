@@ -610,10 +610,7 @@ class NetworkSettings extends Adapter {
             }
 
             const typeIsEditable =
-                item.type === 'ethernet' ||
-                item.type === 'wifi' ||
-                item.type === 'bridge' ||
-                item.type === 'bond';
+                item.type === 'ethernet' || item.type === 'wifi' || item.type === 'bridge' || item.type === 'bond';
             item.editable = typeIsEditable && !item.slaveOf && item.status !== 'unmanaged';
         }
 
@@ -768,12 +765,7 @@ class NetworkSettings extends Adapter {
         if (!input?.iface) {
             return { success: false, message: 'Interface is required' };
         }
-        if (
-            input.type !== 'ethernet' &&
-            input.type !== 'wifi' &&
-            input.type !== 'bridge' &&
-            input.type !== 'bond'
-        ) {
+        if (input.type !== 'ethernet' && input.type !== 'wifi' && input.type !== 'bridge' && input.type !== 'bond') {
             return { success: false, message: 'This interface type is not supported' };
         }
 
