@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const adapter_core_1 = require("@iobroker/adapter-core");
 const node_child_process_1 = require("node:child_process");
 const node_dns_1 = require("node:dns");
+const node_fs_1 = require("node:fs");
 const node_net_1 = require("node:net");
 const node_os_1 = require("node:os");
 // Take the logic for WI-FI here
@@ -118,10 +119,37 @@ class NetworkSettings extends adapter_core_1.Adapter {
         });
     }
     async main() {
+        if (NetworkSettings.isRunningInContainer()) {
+            this.log.error('This adapter cannot run inside a Docker or other container. It needs to reconfigure the host network via NetworkManager (nmcli), which is not accessible from within a container. Install the adapter directly on the Linux host (e.g. Raspberry Pi OS) instead.');
+            await this.setState('info.connection', false, true);
+            this.terminate('Docker / container execution is not supported', 11);
+            return;
+        }
         const interfaces = this.getInterfaces();
         if (interfaces.length) {
             await this.setState('info.connection', true, true);
         }
+    }
+    static isRunningInContainer() {
+        // Docker writes this marker file into every container.
+        if ((0, node_fs_1.existsSync)('/.dockerenv')) {
+            return true;
+        }
+        // Podman / CRI-O equivalent.
+        if ((0, node_fs_1.existsSync)('/run/.containerenv')) {
+            return true;
+        }
+        // cgroup v1/v2 paths mention the container runtime.
+        try {
+            const cgroup = (0, node_fs_1.readFileSync)('/proc/1/cgroup', 'utf8');
+            if (/\b(?:docker|containerd|kubepods|lxc|podman)\b/i.test(cgroup)) {
+                return true;
+            }
+        }
+        catch {
+            // /proc/1/cgroup is absent on non-Linux hosts — treat as "not a container".
+        }
+        return false;
     }
     static parseTable(text) {
         const lines = text.split('\n').filter(line => line.trim());

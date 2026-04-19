@@ -51,6 +51,10 @@ sudo /opt/iobroker/node_modules/iobroker.wireless-settings/wlan_rights.sh
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- Detect docker
+
 ### 1.2.1 (2026-04-19)
 
 - Added editable Ethernet and IPv4 settings in the Admin UI

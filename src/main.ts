@@ -1,6 +1,7 @@
 import { Adapter, type AdapterOptions } from '@iobroker/adapter-core';
 import { execFile } from 'node:child_process';
 import { getServers as getDnsServers } from 'node:dns';
+import { existsSync, readFileSync } from 'node:fs';
 import { isIPv4 } from 'node:net';
 import { networkInterfaces } from 'node:os';
 
@@ -208,10 +209,39 @@ class NetworkSettings extends Adapter {
     }
 
     async main(): Promise<void> {
+        if (NetworkSettings.isRunningInContainer()) {
+            this.log.error(
+                'This adapter cannot run inside a Docker or other container. It needs to reconfigure the host network via NetworkManager (nmcli), which is not accessible from within a container. Install the adapter directly on the Linux host (e.g. Raspberry Pi OS) instead.',
+            );
+            await this.setState('info.connection', false, true);
+            this.terminate('Docker / container execution is not supported', 11);
+            return;
+        }
         const interfaces: string[] = this.getInterfaces();
         if (interfaces.length) {
             await this.setState('info.connection', true, true);
         }
+    }
+
+    static isRunningInContainer(): boolean {
+        // Docker writes this marker file into every container.
+        if (existsSync('/.dockerenv')) {
+            return true;
+        }
+        // Podman / CRI-O equivalent.
+        if (existsSync('/run/.containerenv')) {
+            return true;
+        }
+        // cgroup v1/v2 paths mention the container runtime.
+        try {
+            const cgroup = readFileSync('/proc/1/cgroup', 'utf8');
+            if (/\b(?:docker|containerd|kubepods|lxc|podman)\b/i.test(cgroup)) {
+                return true;
+            }
+        } catch {
+            // /proc/1/cgroup is absent on non-Linux hosts — treat as "not a container".
+        }
+        return false;
     }
 
     static parseTable(text: string): Record<string, string>[] {
