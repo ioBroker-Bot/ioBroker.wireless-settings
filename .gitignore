@@ -12,3 +12,4 @@ Thumbs.db
 
 #ignore .commitinfo created by ioBroker release script
 .commitinfo
+/src-admin/.__mf__temp/

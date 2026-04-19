@@ -47,5 +47,11 @@
   "Network settings saved. The connection will be reapplied shortly.": "Network settings saved. The connection will be reapplied shortly.",
   "Unable to save network settings": "Unable to save network settings",
   "This interface cannot be edited with NetworkManager": "This interface cannot be edited with NetworkManager",
-  "Connect to a WI-FI network first to edit its IP settings": "Connect to a WI-FI network first to edit its IP settings"
+  "Connect to a WI-FI network first to edit its IP settings": "Connect to a WI-FI network first to edit its IP settings",
+  "Refresh": "Refresh",
+  "Adapter is running": "Adapter is running",
+  "Adapter is not running": "Adapter is not running",
+  "Network settings": "Network settings",
+  "This interface is enslaved to %s. Edit that profile instead.": "This interface is enslaved to %s. Edit that profile instead.",
+  "Open master": "Open master"
 }

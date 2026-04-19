@@ -14,6 +14,8 @@ interface WirelessNetwork {
     speed: string;
 }
 
+type InterfaceType = 'ethernet' | 'loopback' | 'wifi' | 'wifi-p2p' | 'bridge' | 'bond';
+
 interface NetworkInterface {
     iface: string;
     ip4: string;
@@ -29,15 +31,17 @@ interface NetworkInterface {
     configGateway: string;
     configDns: string[];
     connection: string;
-    type: 'ethernet' | 'loopback' | 'wifi' | 'wifi-p2p';
+    type: InterfaceType;
     editable: boolean;
     virtual?: boolean;
     status: ConnectionState;
+    /** When set, this interface is enslaved to the named master connection and ipv4 must be edited on the master. */
+    slaveOf?: string;
 }
 
 interface SetInterfaceConfigInput {
     iface: string;
-    type: 'ethernet' | 'wifi';
+    type: InterfaceType;
     dhcp: boolean;
     ip4?: string;
     ip4subnet?: string;
@@ -58,6 +62,8 @@ interface ConnectionProfile {
     ip4subnet: string;
     gateway: string;
     dns: string[];
+    /** If the profile is a slave, the name of the master connection it inherits ipv4 settings from. */
+    slaveOf?: string;
 }
 
 interface ExecuteOptions {
@@ -182,7 +188,7 @@ class NetworkSettings extends Adapter {
     }
 
     waitForEnd(callback?: (timeout: boolean) => void, _started?: number): void {
-        _started = _started || Date.now();
+        _started ||= Date.now();
         if (this.cmdRunning && Date.now() - _started < 4000) {
             setTimeout(() => this.waitForEnd(callback, _started), 200);
         } else if (callback) {
@@ -194,10 +200,10 @@ class NetworkSettings extends Adapter {
         this.stopping = true;
         await this.setState('info.connection', false, true);
         this.waitForEnd(timeout => {
-            timeout && this.log.warn(`Timeout by waiting of command: ${this.cmdRunning}`);
-            if (callback) {
-                callback();
+            if (timeout) {
+                this.log.warn(`Timeout by waiting of command: ${this.cmdRunning}`);
             }
+            callback?.();
         });
     }
 
@@ -219,9 +225,9 @@ class NetworkSettings extends Adapter {
         let offset = 0;
         // Get the position of each word in line
         parts.forEach((part, i) => {
-            const pos = header.indexOf(part);
+            const pos = header!.indexOf(part);
             positions[i] = { name: part, position: pos + offset };
-            header = header.substring(pos);
+            header = header!.substring(pos);
             offset += pos;
             const space = header.indexOf(' ');
             if (space !== -1) {
@@ -356,11 +362,19 @@ class NetworkSettings extends Adapter {
         if (ifaceType === 'wifi') {
             return connectionType.includes('wireless') || connectionType.includes('wifi');
         }
+        if (ifaceType === 'bridge') {
+            return connectionType.includes('bridge');
+        }
+        if (ifaceType === 'bond') {
+            return connectionType.includes('bond');
+        }
         return false;
     }
 
     private async getNmcliDeviceField(iface: string, field: string): Promise<string> {
-        return this.execFileAsync('nmcli', ['-g', field, 'device', 'show', iface], { logErrors: false }).catch(() => '');
+        return this.execFileAsync('nmcli', ['-g', field, 'device', 'show', iface], { logErrors: false }).catch(
+            () => '',
+        );
     }
 
     private async getNmcliConnectionField(connection: string, field: string): Promise<string> {
@@ -431,10 +445,33 @@ class NetworkSettings extends Adapter {
         return connection;
     }
 
-    private async readConnectionProfile(connection: string): Promise<ConnectionProfile> {
+    private async readConnectionProfile(connection: string, depth = 0): Promise<ConnectionProfile> {
+        // Guard against pathological master chains.
+        if (depth > 4) {
+            return { dhcp: false, ip4: '', ip4subnet: '', gateway: '', dns: [] };
+        }
+
+        const slaveType = NetworkSettings.firstNonEmptyLine(
+            await this.getNmcliConnectionField(connection, 'connection.slave-type'),
+        );
+        if (slaveType) {
+            // Slave profiles have no ipv4 settings of their own — read the master's.
+            const master = NetworkSettings.firstNonEmptyLine(
+                await this.getNmcliConnectionField(connection, 'connection.master'),
+            );
+            if (master) {
+                const masterProfile = await this.readConnectionProfile(master, depth + 1);
+                return { ...masterProfile, slaveOf: master };
+            }
+        }
+
         const method = NetworkSettings.firstNonEmptyLine(await this.getNmcliConnectionField(connection, 'ipv4.method'));
-        const ip4Address = NetworkSettings.parseIpv4Address(await this.getNmcliConnectionField(connection, 'ipv4.addresses'));
-        const gateway = NetworkSettings.firstNonEmptyLine(await this.getNmcliConnectionField(connection, 'ipv4.gateway'));
+        const ip4Address = NetworkSettings.parseIpv4Address(
+            await this.getNmcliConnectionField(connection, 'ipv4.addresses'),
+        );
+        const gateway = NetworkSettings.firstNonEmptyLine(
+            await this.getNmcliConnectionField(connection, 'ipv4.gateway'),
+        );
         const dns = NetworkSettings.parseList(await this.getNmcliConnectionField(connection, 'ipv4.dns'));
 
         return {
@@ -528,7 +565,7 @@ class NetworkSettings extends Adapter {
             const item = result.find(resultItem => resultItem.iface === items[i].DEVICE);
             if (item) {
                 item.status = NetworkSettings.normalizeConnectionState(items[i].STATE);
-                item.type = items[i].TYPE as 'ethernet' | 'loopback' | 'wifi' | 'wifi-p2p';
+                item.type = items[i].TYPE as InterfaceType;
             } else {
                 result.push({
                     iface: items[i].DEVICE,
@@ -546,7 +583,7 @@ class NetworkSettings extends Adapter {
                     configGateway: '',
                     configDns: [],
                     connection: '',
-                    type: items[i].TYPE as 'ethernet' | 'loopback' | 'wifi' | 'wifi-p2p',
+                    type: items[i].TYPE as InterfaceType,
                     editable: false,
                 });
             }
@@ -567,9 +604,17 @@ class NetworkSettings extends Adapter {
                 item.configIp4subnet = profile.ip4subnet;
                 item.configGateway = profile.gateway;
                 item.configDns = profile.dns;
+                if (profile.slaveOf) {
+                    item.slaveOf = profile.slaveOf;
+                }
             }
 
-            item.editable = (item.type === 'ethernet' || item.type === 'wifi') && item.status !== 'unmanaged';
+            const typeIsEditable =
+                item.type === 'ethernet' ||
+                item.type === 'wifi' ||
+                item.type === 'bridge' ||
+                item.type === 'bond';
+            item.editable = typeIsEditable && !item.slaveOf && item.status !== 'unmanaged';
         }
 
         return result;
@@ -723,8 +768,13 @@ class NetworkSettings extends Adapter {
         if (!input?.iface) {
             return { success: false, message: 'Interface is required' };
         }
-        if (input.type !== 'ethernet' && input.type !== 'wifi') {
-            return { success: false, message: 'Only ethernet and WI-FI interfaces are supported' };
+        if (
+            input.type !== 'ethernet' &&
+            input.type !== 'wifi' &&
+            input.type !== 'bridge' &&
+            input.type !== 'bond'
+        ) {
+            return { success: false, message: 'This interface type is not supported' };
         }
 
         try {
@@ -734,6 +784,22 @@ class NetworkSettings extends Adapter {
             }
             if (!connection) {
                 return { success: false, message: 'No editable NetworkManager profile found for this interface' };
+            }
+
+            // Reject edits targeting a slave profile — IPv4 lives on the master.
+            const slaveType = NetworkSettings.firstNonEmptyLine(
+                await this.getNmcliConnectionField(connection, 'connection.slave-type'),
+            );
+            if (slaveType) {
+                const master = NetworkSettings.firstNonEmptyLine(
+                    await this.getNmcliConnectionField(connection, 'connection.master'),
+                );
+                return {
+                    success: false,
+                    message: master
+                        ? `Interface is enslaved to "${master}". Edit that profile instead.`
+                        : 'Interface is enslaved — edit the master profile instead.',
+                };
             }
 
             const dnsList = Array.isArray(input.dns)

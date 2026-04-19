@@ -56,6 +56,7 @@ sudo /opt/iobroker/node_modules/iobroker.wireless-settings/wlan_rights.sh
 - Added editable Ethernet and IPv4 settings in the Admin UI
 - Added DHCP/static IPv4 switching with subnet, gateway and DNS handling
 - Improved command execution by using argument-based process calls instead of raw shell strings
+- Migrated GUI to vite
 
 ### 1.0.2 (2024-10-04)
 
