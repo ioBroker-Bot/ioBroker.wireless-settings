@@ -103,7 +103,6 @@
     "mode": "daemon",
     "type": "network",
     "compact": true,
-    "materialize": true,
     "messagebox": true,
     "connectionType": "local",
     "dataSource": "none",
@@ -111,7 +110,15 @@
       "license": "MIT",
       "type": "free"
     },
-    "tier": 3
+    "tier": 3,
+    "adminUI": {
+      "config": "materialize"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ]
   },
   "native": {},
   "objects": [],
