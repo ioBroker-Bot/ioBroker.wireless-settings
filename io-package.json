@@ -103,7 +103,6 @@
     "mode": "daemon",
     "type": "network",
     "compact": true,
-    "materialize": true,
     "messagebox": true,
     "connectionType": "local",
     "dataSource": "none",
@@ -112,6 +111,9 @@
       "type": "free"
     },
     "tier": 3,
+    "adminUI": {
+      "config": "materialize"
+    },
     "dependencies": [
       {
         "js-controller": ">=6.0.11"
